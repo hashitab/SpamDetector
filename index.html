@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpamDetector- Advanced Threat Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background: #050505; 
+            font-family: 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        .glass-card {
+            background: rgba(15, 15, 15, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #ef4444, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .input-modern {
+            background: #0a0a0a;
+            border: 1px solid #1f1f1f;
+            transition: all 0.3s ease;
+        }
+        .input-modern:focus {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+            outline: none;
+        }
+
+        .gauge-fill {
+            transition: stroke-dasharray 1.2s cubic-bezier(0.5, 0, 0, 1);
+        }
+
+        /* Scanner Animation */
+        .scanner-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ef4444, transparent);
+            animation: scan 2s linear infinite;
+            opacity: 0.5;
+        }
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="text-zinc-400 min-h-screen">
+
+    <!-- ========== 1. LOGIN SCREEN ========== -->
+    <div id="login-screen" class="h-screen flex items-center justify-center relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-red-900/10 via-black to-orange-900/5"></div>
+        
+        <div class="glass-card p-8 rounded-2xl w-full max-w-md z-10 shadow-2xl border border-zinc-800/50">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-600 to-orange-500 mb-4 shadow-lg shadow-red-900/30">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h1 class="text-3xl font-bold text-white tracking-tight">SpamDetector</h1>
+                <p class="text-zinc-500 text-sm mt-1">Advance Threat Intelligence</p>
+            </div>
+
+            <div class="space-y-4">
+                <input id="email-input" type="text" placeholder="Email Address" class="w-full px-4 py-3 rounded-lg input-modern text-white placeholder-zinc-600">
+                <input id="pass-input" type="password" placeholder="Password" class="w-full px-4 py-3 rounded-lg input-modern text-white placeholder-zinc-600">
+                <button onclick="login()" class="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-lg transition duration-300 shadow-lg shadow-red-900/30">
+                    Access Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 2. MAIN DASHBOARD ========== -->
+    <div id="dashboard" class="hidden">
+
+        <!-- Navigation -->
+        <nav class="border-b border-zinc-800/50 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-6">
+                    <h1 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500/50"></span>
+                        SpamSense
+                    </h1>
+                    <div class="hidden md:flex gap-1 bg-zinc-900/50 p-1 rounded-lg border border-zinc-800">
+                        <button onclick="showTab('analyze')" id="btn-analyze" class="px-4 py-1.5 rounded text-xs font-medium transition text-white bg-zinc-800">Analyze</button>
+                        <button onclick="showTab('history')" id="btn-history" class="px-4 py-1.5 rounded text-xs font-medium transition text-zinc-400 hover:text-white">History</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="hidden sm:flex items-center gap-1.5 text-xs bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-1 rounded-full">
+                        <span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> System Online
+                    </span>
+                    <button onclick="logout()" class="text-xs text-zinc-500 hover:text-white border border-zinc-800 px-3 py-1.5 rounded-lg transition">Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- Header -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-semibold text-white mb-1">Analysis Engine</h2>
+                <p class="text-zinc-500 text-sm">Granular inspection of content, context, and security threats.</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-card p-4 rounded-xl">
+                    <p class="text-zinc-600 text-xs font-medium uppercase tracking-wider">Scanned</p>
+                    <p id="stat-total" class="text-2xl font-bold text-white mt-1">0</p>
+                </div>
+                <div class="glass-card p-4 rounded-xl border-red-500/10">
+                    <p class="text-zinc-600 text-xs font-medium uppercase tracking-wider">Threats</p>
+                    <p id="stat-spam" class="text-2xl font-bold text-red-500 mt-1">0</p>
+                </div>
+                <div class="glass-card p-4 rounded-xl border-green-500/10">
+                    <p class="text-zinc-600 text-xs font-medium uppercase tracking-wider">Clean</p>
+                    <p id="stat-safe" class="text-2xl font-bold text-green-500 mt-1">0</p>
+                </div>
+                <div class="glass-card p-4 rounded-xl">
+                    <p class="text-zinc-600 text-xs font-medium uppercase tracking-wider">Avg. Risk</p>
+                    <p id="stat-avg" class="text-2xl font-bold text-white mt-1">0%</p>
+                </div>
+            </div>
+
+            <!-- Analyze Section -->
+            <div id="analyze-section" class="grid lg:grid-cols-5 gap-6 fade-in-up">
+                
+                <!-- Left: Form -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            Input Data
+                        </h3>
+                        <form id="name-form" class="space-y-4" onsubmit="event.preventDefault(); startAnalysis();">
+                            <div>
+                                <label class="block text-zinc-500 text-xs font-medium mb-1.5 uppercase tracking-wider">Subject Line</label>
+                                <input id="subject" type="text" placeholder="e.g. Urgent: Verify your account" class="w-full px-4 py-2.5 rounded-lg input-modern text-white">
+                            </div>
+                            <div>
+                                <label class="block text-zinc-500 text-xs font-medium mb-1.5 uppercase tracking-wider">Email Body</label>
+                                <textarea id="body" rows="8" placeholder="Paste the raw email content here for deep scanning..." class="w-full px-4 py-2.5 rounded-lg input-modern text-white resize-none"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-lg transition duration-300 flex items-center justify-center gap-2 shadow-lg shadow-red-900/20">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                Run Deep Analysis
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- VS Gmail Section -->
+                    <div class="glass-card p-6 rounded-2xl border-yellow-500/10 bg-yellow-500/5">
+                        <h4 class="font-semibold text-white mb-3 text-sm flex items-center gap-2">
+                            <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Why SpamDector vs Gmail?
+                        </h4>
+                        <div class="space-y-3 text-xs text-zinc-400">
+                            <div class="flex gap-3 items-start">
+                                <span class="text-red-400 font-bold mt-0.5">Gmail:</span>
+                                <span>Uses a "Black Box" AI. It moves emails to spam silently without telling you why. You have zero control or insight.</span>
+                            </div>
+                            <div class="flex gap-3 items-start">
+                                <span class="text-green-400 font-bold mt-0.5">SpamSense:</span>
+                                <span>Shows <b>Explainable AI</b>. We break down the exact words, links, and patterns that triggered the alert.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Result -->
+                <div class="lg:col-span-3 glass-card p-6 rounded-2xl flex flex-col min-h-[500px] relative overflow-hidden">
+                    
+                    <!-- Loading State -->
+                    <div id="result-loading" class="hidden absolute inset-0 bg-black/80 z-20 flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="relative w-16 h-16 mx-auto mb-4">
+                                <div class="absolute inset-0 border-2 border-zinc-700 rounded-full"></div>
+                                <div class="absolute inset-0 border-2 border-t-red-500 rounded-full animate-spin"></div>
+                            </div>
+                            <p class="text-white font-medium">Analyzing Content...</p>
+                            <p class="text-zinc-500 text-xs">Inspecting semantic patterns</p>
+                            <div class="scanner-line"></div>
+                        </div>
+                    </div>
+
+                    <!-- Placeholder State -->
+                    <div id="result-placeholder" class="flex-grow flex flex-col items-center justify-center text-center">
+                        <div class="w-20 h-20 rounded-2xl bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 border border-zinc-700">
+                            <svg class="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        </div>
+                        <p class="text-zinc-400 font-medium">Awaiting Input</p>
+                        <p class="text-zinc-600 text-xs mt-1 max-w-xs">Paste an email subject and body to perform a deep forensic analysis.</p>
+                    </div>
+                    
+                    <!-- Result State -->
+                    <div id="result-display" class="hidden w-full">
+                        
+                        <!-- Top Summary -->
+                        <div class="flex flex-col items-center mb-6 pb-6 border-b border-zinc-800">
+                            <div class="relative w-32 h-32 mx-auto mb-4">
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                    <path class="text-zinc-800" stroke="currentColor" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    <path id="gauge-circle" class="gauge-fill text-red-500" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span id="score-val" class="text-4xl font-bold text-white">0%</span>
+                                    <span id="risk-label" class="text-xs text-zinc-400 uppercase">Risk Score</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-zinc-300">Verdict: <span id="verdict-text" class="font-bold">Pending</span></p>
+                        </div>
+
+                        <!-- Detailed Report Cards -->
+                        <div class="space-y-3" id="analysis-modules">
+                            <!-- Modules will be injected here -->
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div id="history-section" class="hidden fade-in-up">
+                <div class="glass-card rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-white">History Log</h3>
+                        <span id="history-count" class="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded">0 Emails</span>
+                    </div>
+                    <div id="history-list" class="p-4 divide-y divide-zinc-800/50">
+                        <div class="text-center py-12 text-zinc-600">
+                            <svg class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            No history found.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- STATE ---
+        let stats = { total: 0, spam: 0, safe: 0, avg: 0 };
+        let historyData = [];
+
+        // --- AUTH ---
+        function login() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('fade-in-up');
+        }
+
+        function logout() {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        // --- NAV ---
+        function showTab(tab) {
+            const analyzeSection = document.getElementById('analyze-section');
+            const historySection = document.getElementById('history-section');
+            const btnAnalyze = document.getElementById('btn-analyze');
+            const btnHistory = document.getElementById('btn-history');
+
+            if(tab === 'analyze') {
+                analyzeSection.classList.remove('hidden');
+                historySection.classList.add('hidden');
+                btnAnalyze.className = "px-4 py-1.5 rounded text-xs font-medium transition text-white bg-zinc-800";
+                btnHistory.className = "px-4 py-1.5 rounded text-xs font-medium transition text-zinc-400 hover:text-white";
+            } else {
+                analyzeSection.classList.add('hidden');
+                historySection.classList.remove('hidden');
+                btnHistory.className = "px-4 py-1.5 rounded text-xs font-medium transition text-white bg-zinc-800";
+                btnAnalyze.className = "px-4 py-1.5 rounded text-xs font-medium transition text-zinc-400 hover:text-white";
+            }
+        }
+
+        // --- DEEP ANALYSIS ENGINE ---
+        function startAnalysis() {
+            const subject = document.getElementById('subject').value;
+            const body = document.getElementById('body').value;
+            const text = (subject + " " + body).toLowerCase();
+
+            if(!subject && !body) return;
+
+            // Show Loading
+            document.getElementById('result-placeholder').classList.add('hidden');
+            document.getElementById('result-display').classList.add('hidden');
+            document.getElementById('result-loading').classList.remove('hidden');
+
+            // Simulate Processing Time
+            setTimeout(() => {
+                const result = runDeepLogic(text);
+                renderResult(result);
+                updateStats(result.score);
+                addToHistory(subject, result.score);
+                
+                // Hide Loading
+                document.getElementById('result-loading').classList.add('hidden');
+                document.getElementById('result-display').classList.remove('hidden');
+                document.getElementById('result-display').classList.add('fade-in-up');
+            }, 1500);
+        }
+
+        function runDeepLogic(text) {
+            let totalScore = 0;
+            let modules = [];
+
+            // 1. Psychology Analysis
+            let psyScore = 0;
+            let psyFindings = [];
+            if (text.includes("urgent") || text.includes("immediate")) { psyScore += 25; psyFindings.push("Urgency words detected"); }
+            if (text.includes("act now") || text.includes("immediately")) { psyScore += 25; psyFindings.push("Pressure to act quickly"); }
+            if (text.includes("dear friend") || text.includes("greeting")) { psyScore += 10; psyFindings.push("Generic, impersonal greeting"); }
+            
+            modules.push({
+                name: "Psychological Manipulation",
+                icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>`,
+                score: psyScore,
+                findings: psyFindings,
+                status: psyScore > 30 ? 'danger' : 'safe'
+            });
+            totalScore += psyScore;
+
+            // 2. Financial Scam Analysis
+            let finScore = 0;
+            let finFindings = [];
+            if (text.includes("lottery") || text.includes("won") || text.includes("prize")) { finScore += 40; finFindings.push("Lottery/Prize mention"); }
+            if (text.includes("transfer") || text.includes("million dollars") || text.includes("inheritance")) { finScore += 40; finFindings.push("Money transfer request"); }
+            if (text.includes("bitcoin") || text.includes("crypto") || text.includes("wallet")) { finScore += 15; finFindings.push("Cryptocurrency keywords"); }
+
+            modules.push({
+                name: "Financial Scam Indicators",
+                icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`,
+                score: finScore,
+                findings: finFindings,
+                status: finScore > 20 ? 'danger' : 'safe'
+            });
+            totalScore += finScore;
+
+            // 3. Security Threats
+            let secScore = 0;
+            let secFindings = [];
+            if (text.includes("password") || text.includes("credential")) { secScore += 30; secFindings.push("Requests for credentials"); }
+            if (text.includes("verify") || text.includes("suspend")) { secScore += 20; secFindings.push("Account suspension threats"); }
+            if (text.includes("security alert") || text.includes("unusual activity")) { secScore += 20; secFindings.push("Fake security alert style"); }
+
+            modules.push({
+                name: "Security Threats",
+                icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>`,
+                score: secScore,
+                findings: secFindings,
+                status: secScore > 20 ? 'danger' : 'safe'
+            });
+            totalScore += secScore;
+
+            // 4. Link Analysis
+            let linkScore = 0;
+            let linkFindings = [];
+            if (text.includes("http://") || text.includes("https://")) { linkScore += 10; linkFindings.push("Hyperlinks found"); }
+            if (text.includes("bit.ly") || text.includes(".xyz") || text.includes(".tk")) { linkScore += 40; linkFindings.push("Suspicious URL shortener or TLD"); }
+            if (text.includes("click here") || text.includes("tap here")) { linkScore += 20; linkFindings.push("Call-to-action link text"); }
+
+            modules.push({
+                name: "Link & URL Safety",
+                icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>`,
+                score: linkScore,
+                findings: linkFindings,
+                status: linkScore > 20 ? 'danger' : 'safe'
+            });
+            totalScore += linkScore;
+
+            // Normalize score
+            if(totalScore > 100) totalScore = 100;
+
+            return {
+                score: totalScore,
+                modules: modules
+            };
+        }
+
+        function renderResult(result) {
+            // Update Gauge
+            const circle = document.getElementById('gauge-circle');
+            circle.style.strokeDasharray = `${result.score}, 100`;
+            
+            const color = result.score > 70 ? '#ef4444' : result.score > 40 ? '#f59e0b' : '#22c55e';
+            circle.style.stroke = color;
+            document.getElementById('score-val').innerText = result.score + "%";
+            document.getElementById('score-val').style.color = color;
+            
+            const verdict = result.score > 70 ? "HIGH RISK" : result.score > 40 ? "SUSPICIOUS" : "SAFE";
+            document.getElementById('verdict-text').innerText = verdict;
+            document.getElementById('verdict-text').style.color = color;
+
+            // Render Modules
+            const modulesContainer = document.getElementById('analysis-modules');
+            modulesContainer.innerHTML = '';
+
+            result.modules.forEach(mod => {
+                const statusColor = mod.status === 'danger' ? 'red' : 'green';
+                const html = `
+                <div class="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800 hover:border-zinc-700 transition">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-2 text-sm font-medium text-white">
+                            <svg class="w-4 h-4 text-${statusColor}-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">${mod.icon}</svg>
+                            ${mod.name}
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded bg-${statusColor}-500/10 text-${statusColor}-500 border border-${statusColor}-500/20">
+                            ${mod.status === 'danger' ? 'Risk Detected' : 'Passed'}
+                        </span>
+                    </div>
+                    <div class="text-xs text-zinc-500 space-y-1 mt-2 pl-6">
+                        ${mod.findings.length > 0 ? 
+                            mod.findings.map(f => `<div class="flex items-center gap-2"><span class="w-1 h-1 bg-zinc-600 rounded-full"></span>${f}</div>`).join('') : 
+                            '<div class="flex items-center gap-2 text-zinc-600"><span class="w-1 h-1 bg-zinc-700 rounded-full"></span>No issues found</div>'
+                        }
+                    </div>
+                </div>
+                `;
+                modulesContainer.innerHTML += html;
+            });
+        }
+
+        function updateStats(score) {
+            stats.total++;
+            if (score > 50) stats.spam++; else stats.safe++;
+            stats.avg = Math.round(((stats.avg * (stats.total-1)) + score) / stats.total);
+
+            document.getElementById('stat-total').innerText = stats.total;
+            document.getElementById('stat-spam').innerText = stats.spam;
+            document.getElementById('stat-safe').innerText = stats.safe;
+            document.getElementById('stat-avg').innerText = stats.avg + "%";
+        }
+
+        function addToHistory(subject, score) {
+            const list = document.getElementById('history-list');
+            if(historyData.length === 0) list.innerHTML = '';
+            
+            const item = document.createElement('div');
+            item.className = "flex justify-between items-center py-3 px-2 hover:bg-zinc-900/50 rounded transition";
+            
+            const date = new Date().toLocaleTimeString();
+            const isSpam = score > 50;
+
+            item.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full ${isSpam ? 'bg-red-500' : 'bg-green-500'}"></div>
+                    <div>
+                        <p class="font-medium text-white text-sm">${subject || 'No Subject'}</p>
+                        <p class="text-xs text-zinc-600">${date}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="font-bold text-sm ${isSpam ? 'text-red-400' : 'text-green-400'}">${score}%</span>
+                </div>
+            `;
+            
+            list.prepend(item);
+            historyData.push(subject);
+            document.getElementById('history-count').innerText = historyData.length + " Emails";
+        }
+    </script>
+</body>
+</html>
